@@ -1,0 +1,224 @@
+{
+  "title": "Messages format",
+  "description": "JSON schema for the messages routing format",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "id of message",
+      "type": "string"
+    },
+    "device_id": {
+      "description": "id of device",
+      "type": "integer"
+    },
+    "timestamp": {
+      "description": "timestamp of message",
+      "type": "string",
+      "format": "date-time"
+    },
+    "device_properties": {
+      "type": "object",
+      "properties": {
+        "external_id": {
+          "description": "id on the client platform",
+          "type": "string"
+        },
+        "deveui": {
+          "description": "deveui (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{16}$"
+        },
+        "appeui": {
+          "description": "appeui (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{16}$"
+        }
+      },
+      "additionalProperties": {
+        "description": "client defined device properties",
+        "type": "string"
+      },
+      "required": ["appeui", "deveui"]
+    },
+    "error": {
+      "description": "error code, in case of an error",
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "type of message",
+          "type": "string",
+          "enum": ["join"]
+        },
+        "protocol_data": { "$ref": "#/definitions/protocol_data" }
+      },
+      "oneOf": [
+          { "$ref": "#/definitions/geolocation_none" },
+          { "$ref": "#/definitions/geolocation_ok" }
+      ],
+      "required": ["type", "protocol_data"]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "type of message",
+          "type": "string",
+          "enum": ["uplink"]
+        },
+        "count": {
+          "description": "uplink message counter (absent if 0)",
+          "type": "integer"
+        },
+        "payload": { "$ref": "#/definitions/payload" },
+        "payload_encrypted": {
+          "description": "encrypted payload (hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]+$"
+        },
+        "payload_cleartext": {
+          "description": "cleartext payload (hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]+$"
+        },
+        "protocol_data": { "$ref": "#/definitions/protocol_data" },
+        "ack": {
+          "description": "ack of the previous downlink message",
+          "type": "boolean"
+        }
+      },
+      "oneOf": [
+          { "$ref": "#/definitions/geolocation_none" },
+          { "$ref": "#/definitions/geolocation_ok" }
+      ],
+      "required": ["type", "payload_encrypted", "protocol_data"]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "type of message",
+          "type": "string",
+          "enum": ["downlink"]
+        },
+        "count": {
+          "description": "downlink message counter (absent if 0)",
+          "type": "integer"
+        },
+        "command_id": {
+          "description": "command id of request (only for applicative downlinks)",
+          "type": "integer"
+        },
+        "protocol_data": { "$ref": "#/definitions/protocol_data" },
+        "ack": {
+          "description": "ack of the previous uplink message",
+          "type": "boolean"
+        },
+        "delivered_at": {
+          "description": "deprecated",
+          "type": "string"
+        }
+      },
+      "required": ["type", "protocol_data"]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "type of message",
+          "type": "string",
+          "enum": ["external"]
+        },
+        "payload": { "$ref": "#/definitions/payload" }
+      },
+      "required": ["type", "payload"]
+    }
+  ],
+  "required": ["id", "device_id", "device_properties"],
+  "definitions": {
+    "protocol_data": {
+      "type": "object",
+      "properties": {
+        "AppNonce": {
+          "description": "LoRa AppNonce (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{6}$"
+        },
+        "DevAddr": {
+          "description": "LoRa DevAddr (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}$"
+        },
+        "DevNonce": {
+          "description": "LoRa DevNonce (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{4}$"
+        },
+        "NetID": {
+          "description": "LoRa NetID (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{6}$"
+        },
+        "port": {
+          "description": "port (missing in join or for system messages - e.g. MAC commands)",
+          "type": "integer"
+        }
+      },
+      "required": ["AppNonce", "DevAddr", "DevNonce", "NetID"]
+    },
+    "geolocation_none": {
+        "type": "object",
+        "properties": {
+          "geolocation_type": {
+              "description": "Algorithm used to compute location",
+              "type": "string",
+              "enum": [ "none" ]
+          }
+        }
+    },
+    "geolocation_ok": {
+      "type": "object",
+      "properties": {
+        "lat": {
+            "description": "Latitude of device",
+            "type": "number"
+        },
+        "lng": {
+            "description": "Longitude of device",
+            "type": "number"
+        },
+        "geolocation_type": {
+            "description": "Algorithm used to compute location",
+            "type": "string",
+            "enum": [ "tdoa", "network", "device", "fixed", "zone", "none" ]
+        },
+        "geolocation_precision": {
+            "description": "Estimated precision of position (in meters)",
+            "type": "number"
+        }
+      },
+      "required": [ "geolocation_type", "lat", "lng", "geolocation_precision" ]
+    },
+    "payload": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "description": "timestamp of measurement",
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "type": "object",
+            "minProperties":1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "title": "Values format",
+  "description": "JSON schema for the values routing format",
+  "type": "object",
+  "properties": {
+    "device_id": {
+      "description": "id of device",
+      "type": "integer"
+    },
+    "timestamp": {
+      "description": "timestamp of measurement",
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "minProperties":1
+    },
+    "device_properties": {
+      "type": "object",
+      "properties": {
+        "external_id": {
+          "description": "id on the client platform",
+          "type": "string"
+        },
+        "deveui": {
+          "description": "deveui (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{16}$"
+        },
+        "appeui": {
+          "description": "appeui (big endian/hexa)",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{16}$"
+        }
+      },
+      "additionalProperties": {
+        "description": "client defined device properties",
+        "type": "string"
+      },
+      "required": ["appeui", "deveui"]
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "geolocation_type": {
+            "description": "Algorithm used to compute location",
+            "type": "string",
+            "enum": [ "none" ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "properties": {
+        "lat": {
+            "description": "Latitude of device",
+            "type": "number"
+        },
+        "lng": {
+            "description": "Longitude of device",
+            "type": "number"
+        },
+        "geolocation_type": {
+            "description": "Algorithm used to compute location",
+            "type": "string",
+            "enum": [ "tdoa", "network", "device", "fixed", "zone", "none" ]
+        },
+        "geolocation_precision": {
+            "description": "Estimated precision of position (in meters)",
+            "type": "number"
+        }
+      },
+      "required": [ "geolocation_type", "lat", "lng", "geolocation_precision" ]
+    }
+  ],
+  "required": ["device_id", "timestamp", "data", "device_properties"]
+}
